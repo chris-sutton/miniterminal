@@ -1,0 +1,9 @@
+# Ignore everything...
+*
+
+# Except the following files
+!*.cpp
+!*.h
+!*.txt
+!makefile
+!.gitignore
