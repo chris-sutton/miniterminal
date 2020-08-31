@@ -1,7 +1,18 @@
+CXX = g++
+CXXFLAGS = -std=c++14 -Wall -g
+OBJFILES = p1.o Terminal.o
+TARGET = p1
 
-p1:  p1.cpp p1.h
-	g++ -o p1 p1.cpp
+all: $(TARGET)
 
+$(TARGET):  $(OBJFILES)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJFILES)
+
+p1.o:  $(TARGET).cpp $(TARGET).h Terminal.o
+	$(CXX) $(CXXFLAGS) -c $(TARGET).cpp
+
+Terminal.o: Terminal.cpp Terminal.h
+	$(CXX) $(CXXFLAGS) -c Terminal.cpp
 clean:
-	rm -f p1 *.o
+	rm -f $(OBJFILES) $(TARGET)
 
