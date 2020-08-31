@@ -23,9 +23,14 @@ Terminal::Terminal() {
 };
 
 
-void Terminal::printStatement(const std::vector<std::string>& text) {
-    for (const auto& it: text) {
-        std::cout << it << " ";
+void Terminal::printStatement(std::vector<std::string>::const_iterator * it, std::vector<std::string>::const_iterator * end) {
+    int i = 0;
+    while (*it != *end) {
+        std::cout << **it << " ";
+        i++;
+        if (i > 100)
+            break;
+        ++(*it);
     }
     std::cout << std::endl;
 };
@@ -34,10 +39,37 @@ void Terminal::recieveInput(std::string textInput) {
     userInput = textInput;
     delete inputArgs;
     inputArgs = this->processStatement(textInput);
-    printStatement(*inputArgs);
+    this->runStatement(inputArgs);
 };
 
-void Terminal::runStatements(std::vector<std::vector<std::string>> statements) {
+void Terminal::runStatement(std::vector<std::string> * const statement) {
+    std::vector<std::string>::const_iterator it = statement->begin();
+    std::vector<std::string>::const_iterator end = statement->end();
+    int cmd = commands[*it];
+    ++it;
+    
+    switch(cmd) {
+        case 1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            this->printStatement(&it, &end);
+            break;
+        case 5:
+            break;
+        case 6:
+            break;
+        case 7:
+            break;
+        default:
+            break;
+    }
+
+
+    
 
 };
 
