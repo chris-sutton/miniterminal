@@ -1,2 +1,0 @@
-envset HI hi there
-prt $HI is this "quoted    phrase" with extra spaces? it should be. "$AOSPATH" = $AOSPATH
