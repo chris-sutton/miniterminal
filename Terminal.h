@@ -29,6 +29,7 @@ class Terminal {
         void runStatement(std::vector<std::string> * const statements);
         std::vector<std::string>* processStatement(std::string statement);
         void printStatement(std::vector<std::string>::const_iterator * it, std::vector<std::string>::const_iterator * end);
+        void setEnvironmentVariable(std::vector<std::string>::const_iterator * it, std::vector<std::string>::const_iterator * end);
         void replaceEnvironmentVariables(std::vector<std::string>* statementVector);
 };
 

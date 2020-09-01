@@ -12,7 +12,9 @@ Terminal::Terminal() {
     commands =  {
             {"exit", 0},
             {"envset", 1},
+            {"set", 1},
             {"envunset", 2},
+            {"unset", 2},
             {"envprt", 3},
             {"prt", 4},
             {"witch", 5},
@@ -24,12 +26,11 @@ Terminal::Terminal() {
 
 
 void Terminal::printStatement(std::vector<std::string>::const_iterator * it, std::vector<std::string>::const_iterator * end) {
-    int i = 0;
+    bool endStatement = false;
+
     while (*it != *end) {
-        std::cout << **it << " ";
-        i++;
-        if (i > 100)
-            break;
+        endStatement = (((*it)+1) == *end);
+        std::cout << **it << (endStatement ? "" : " ");
         ++(*it);
     }
     std::cout << std::endl;
@@ -42,6 +43,16 @@ void Terminal::recieveInput(std::string textInput) {
     this->runStatement(inputArgs);
 };
 
+void Terminal::setEnvironmentVariable(std::vector<std::string>::const_iterator * it, std::vector<std::string>::const_iterator * end) {
+    std::string key = **it;
+    std::string val = "d";
+    ++(*it);
+    if (*it != *end)
+        val = **it;
+    if (val.find("$", 0, 1) == std::string::npos)
+        venv[key] = val;
+}
+
 void Terminal::runStatement(std::vector<std::string> * const statement) {
     std::vector<std::string>::const_iterator it = statement->begin();
     std::vector<std::string>::const_iterator end = statement->end();
@@ -49,7 +60,11 @@ void Terminal::runStatement(std::vector<std::string> * const statement) {
     ++it;
     
     switch(cmd) {
+        case 0:
+            exit(0);
+            break;
         case 1:
+            this->setEnvironmentVariable(&it, &end);
             break;
         case 2:
             break;
