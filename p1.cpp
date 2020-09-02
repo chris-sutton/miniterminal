@@ -5,14 +5,10 @@
 
 #include "p1.h"
 
-int main() {
-    std::string userInput = "";
-    Terminal *term = new Terminal();
 
-    while(true) {
-        std::getline(std::cin, userInput);
-        term->recieveInput(userInput);
-        userInput = "";
-    }
+int main() {
+    Terminal *term = new Terminal();
+    
+    term->runTerminal();
     return 0;
 }
