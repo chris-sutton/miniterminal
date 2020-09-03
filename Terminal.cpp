@@ -37,8 +37,8 @@ void Terminal::runTerminal() {
 
         if (isatty(fileno(stdin))==1){
             std::cout << venv["USER"] << "_> ";
-        }
         
+        }
         if(std::getline(std::cin, userInput)) {
             if (!userInput.empty()) {
                 this->recieveInput(userInput);
@@ -47,6 +47,7 @@ void Terminal::runTerminal() {
         } else {
             quit = true;
         }
+
         userInput = "";
     }
 }
@@ -146,6 +147,8 @@ void Terminal::runStatement(std::vector<std::string> * const statementVector) {
             this->printStatement(it, end);
             break;
         case 5:
+            ++it;
+            this->witchCommand(*it);
             break;
         case 6:
             std::cout << venv["AOSCWD"] << std::endl;
@@ -192,5 +195,43 @@ void Terminal::replaceEnvironmentVariables(std::vector<std::string>* statementVe
         if (found != std::string::npos) {
             it = venv[it.substr(found+1)];
         }
+    }
+}
+
+std::vector<std::string> Terminal::splitString(std::string text, char delimiter) {
+    std::vector<std::string> paths;
+    std::string temp;
+    std::stringstream ss(text);
+
+    while(std::getline(ss, temp, delimiter)) {
+        paths.push_back(temp);
+    }
+    return paths;
+}
+
+void Terminal::witchCommand(std::string command) {
+    std::vector<std::string> paths = this->splitString(venv["AOSPATH"], ':');
+    std::vector<std::string>::const_iterator it = paths.begin();
+    std::vector<std::string>::const_iterator end = paths.end();
+    DIR *dir;
+    struct dirent *dirp;
+    bool found = false;
+    while (it != end) {
+        const char * directory = &(*it->c_str());
+        const char * filename;
+        const char * cmd = command.c_str();
+
+        if ((dir = opendir(directory)) != NULL && !found) {
+            
+                while((dirp = readdir(dir)) != NULL && !found) {
+                    filename = dirp->d_name;
+                    //std::cout << filename << " " << cmd << std::endl;
+                    if (std::strcmp(filename, cmd) == 0) {
+                        std::cout << directory << "/" << cmd << std::endl;
+                        found = true;
+                    }
+                }
+        }
+        ++it;
     }
 }

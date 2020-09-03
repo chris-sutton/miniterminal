@@ -11,7 +11,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <linux/limits.h>
-
+#include <dirent.h>
+#include <cstring>
 
 class Terminal {
     public:
@@ -38,6 +39,8 @@ class Terminal {
         void unsetEnvironmentVariable(std::vector<std::string>::const_iterator it);
         void printEnvironementVariables();
         void replaceEnvironmentVariables(std::vector<std::string>* statementVector);
+        std::vector<std::string> splitString(std::string text, char delimiter);
+        void witchCommand(std::string command);
 };
 
 
