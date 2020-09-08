@@ -1,8 +1,5 @@
 #include "Terminal.h"
 
-// Add one commandline argument will lead to executing commands in that file without prompt.
-// Add witch feature to find the first 'executable' that matches its argument.
-
 
 Terminal::Terminal() {
     venv = {
@@ -237,7 +234,12 @@ void Terminal::witchCommand(std::string command) {
                     filename = dirp->d_name;
                     //std::cout << filename << " " << cmd << std::endl;
                     if (std::strcmp(filename, cmd) == 0) {
-                        std::cout << directory << "/" << cmd << std::endl;
+                        std::string temp;
+                        temp = directory;
+                        temp += "/";
+                        temp += cmd;
+                        if (access(temp.c_str(), X_OK) == 0)
+                            std::cout << directory << "/" << cmd << std::endl;
                         found = true;
                     }
                 }
