@@ -6,9 +6,12 @@
 #include "p1.h"
 
 
-int main() {
+int main(int argc, char * argv[]) {
+
     Terminal *term = new Terminal();
-    
-    term->runTerminal();
+    if (argc == 2)
+        term->runTerminal(argv[1]);
+    else
+        term->runTerminal();
     return 0;
 }

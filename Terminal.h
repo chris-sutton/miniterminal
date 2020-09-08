@@ -13,6 +13,7 @@
 #include <linux/limits.h>
 #include <dirent.h>
 #include <cstring>
+#include <fstream>
 
 class Terminal {
     public:
@@ -20,7 +21,7 @@ class Terminal {
         Terminal();
         // Public variables
         // Public functions
-        void runTerminal();
+        void runTerminal(std::string argument="");
     private:
         std::string userInput;
         std::map<std::string, std::string> venv;

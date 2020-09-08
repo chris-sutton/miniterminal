@@ -1,6 +1,7 @@
 #include "Terminal.h"
 
-
+// Add one commandline argument will lead to executing commands in that file without prompt.
+// Add witch feature to find the first 'executable' that matches its argument.
 
 
 Terminal::Terminal() {
@@ -26,20 +27,29 @@ Terminal::Terminal() {
 };
 
 
-void Terminal::runTerminal() {
+void Terminal::runTerminal(std::string argument) {
     std::string userInput = "";
     bool quit = false;
-    
+    std::istream *shellIn;
+    std::ifstream fileIn;
+    if (!argument.empty()) {
+        fileIn.open(argument);
+        shellIn = &fileIn;
+    } else {
+        shellIn = &std::cin;
+    }
+
     venv["AOSCWD"] = this->getCurrentWorkingDirectory();
     venv["AOSHOME"] = getenv("HOME");
+    std::string prompt;
 
     while (!quit) {
-
-        if (isatty(fileno(stdin))==1){
+        
+        if (isatty(fileno(stdin))==1 && argument.empty()){
             std::cout << venv["USER"] << "_> ";
         
         }
-        if(std::getline(std::cin, userInput)) {
+        if(std::getline(*shellIn, userInput)) {
             if (!userInput.empty()) {
                 this->recieveInput(userInput);
             }
