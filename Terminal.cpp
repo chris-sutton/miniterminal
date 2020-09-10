@@ -238,9 +238,10 @@ void Terminal::witchCommand(std::string command) {
                         temp = directory;
                         temp += "/";
                         temp += cmd;
-                        if (access(temp.c_str(), X_OK) == 0)
-                            std::cout << directory << "/" << cmd << std::endl;
-                        found = true;
+                        if (access(temp.c_str(), X_OK) == 0) {
+                            std::cout << temp << std::endl;
+                            found = true;
+                        }
                     }
                 }
         }
