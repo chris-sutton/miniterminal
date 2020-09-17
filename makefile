@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++14 -Wall -g
-OBJFILES = p1.o Terminal.o
-TARGET = p1
+OBJFILES = p2.o Terminal.o
+TARGET = p2
 
 all: $(TARGET)
 
