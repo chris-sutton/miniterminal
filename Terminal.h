@@ -42,6 +42,9 @@ class Terminal {
         void replaceEnvironmentVariables(std::vector<std::string>* statementVector);
         std::vector<std::string> splitString(std::string text, char delimiter);
         void witchCommand(std::string command);
+        std::string findCommand(std::string command);
+        void childProcess(std::string command);
+        bool checkExec(std::string path);
 };
 
 

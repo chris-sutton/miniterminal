@@ -43,7 +43,7 @@ void Terminal::runTerminal(std::string argument) {
     while (!quit) {
         
         if (isatty(fileno(stdin))==1 && argument.empty()){
-            std::cout << venv["USER"] << "_> ";
+            std::cout << venv["USER"] << "_sh> ";
         
         }
         if(std::getline(*shellIn, userInput)) {
@@ -217,20 +217,32 @@ std::vector<std::string> Terminal::splitString(std::string text, char delimiter)
 }
 
 void Terminal::witchCommand(std::string command) {
+    std::cout << this->findCommand(command) << std::endl;
+}
+
+bool Terminal::checkExec(std::string path) {
+    if(access(path.c_str(), X_OK) == 0) {
+        return true;
+    }
+    return false;
+}
+
+std::string Terminal::findCommand(std::string command) {
+    std::string notFound = "";
     std::vector<std::string> paths = this->splitString(venv["AOSPATH"], ':');
     std::vector<std::string>::const_iterator it = paths.begin();
     std::vector<std::string>::const_iterator end = paths.end();
     DIR *dir;
     struct dirent *dirp;
-    bool found = false;
+
     while (it != end) {
         const char * directory = &(*it->c_str());
         const char * filename;
         const char * cmd = command.c_str();
 
-        if ((dir = opendir(directory)) != NULL && !found) {
+        if ((dir = opendir(directory)) != NULL) {
             
-                while((dirp = readdir(dir)) != NULL && !found) {
+                while((dirp = readdir(dir)) != NULL) {
                     filename = dirp->d_name;
                     //std::cout << filename << " " << cmd << std::endl;
                     if (std::strcmp(filename, cmd) == 0) {
@@ -238,13 +250,18 @@ void Terminal::witchCommand(std::string command) {
                         temp = directory;
                         temp += "/";
                         temp += cmd;
-                        if (access(temp.c_str(), X_OK) == 0) {
-                            std::cout << temp << std::endl;
-                            found = true;
+                        if (this->checkExec(temp)) {
+                            return temp;
                         }
                     }
                 }
         }
         ++it;
     }
+    return notFound;
+}
+
+void Terminal::childProcess(std::string command) {
+    std::vector<std::string> commandArgs = this->splitString(command, ' ');
+    
 }
