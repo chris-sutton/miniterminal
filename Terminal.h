@@ -19,7 +19,8 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "Process.h"
+#include <signal.h>
+#include "signalHandlers.h"
 
 class Terminal {
     public:
@@ -34,11 +35,11 @@ class Terminal {
         std::vector<std::string> *inputArgs;
         std::vector<std::vector<std::string>> inputStatements;
         std::map<std::string, int> commands;
-        int CPU_LIMIT;
-        int MEM_LIMIT;
 
-        // void lim(int cpu=0, int mem=0);
-        // void lim();
+        int cpu, mem;
+        struct rlimit mainLimitCPU;
+        struct rlimit mainLimitMEM;
+        
         void recieveInput(std::string textInput, int isPipe);
         std::string removeComments(std::string rawInputText);
         void runStatement(std::vector<std::string> * statementVector, int isPipe);
@@ -59,6 +60,11 @@ class Terminal {
         bool isBackground(std::vector<std::string> * statements);
         void handleProgram(std::vector<std::string> * statements, bool background);
         void removeAmpersand(std::vector<std::string> * statementVector);
+        void lim(int cpu, int mem);
+        void limPrint();
+        void setLim();
+
+        
 };
 
 

@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++14 -Wall -g
-OBJFILES = p2.o Terminal.o Process.o
+OBJFILES = p2.o Terminal.o signalHandlers.o
 TARGET = p2
 
 all: $(TARGET)
@@ -11,11 +11,12 @@ $(TARGET):  $(OBJFILES)
 $(TARGET).o:  $(TARGET).cpp $(TARGET).h Terminal.o
 	$(CXX) $(CXXFLAGS) -c $(TARGET).cpp
 
-Terminal.o: Terminal.cpp Terminal.h Process.o
+Terminal.o: Terminal.cpp Terminal.h signalHandlers.o
 	$(CXX) $(CXXFLAGS) -c Terminal.cpp
 
-Process.o: Process.cpp Process.h
-	$(CXX) $(CXXFLAGS) -c Process.cpp
+signalHandlers.o: signalHandlers.cpp signalHandlers.h
+	$(CXX) $(CXXFLAGS) -c signalHandlers.cpp
+
 clean:
 	rm -f $(OBJFILES) $(TARGET)
 

@@ -22,27 +22,41 @@ Terminal::Terminal() {
             {"lim", 8}
         };
     userInput = "";
+    cpu = 0;
+    mem = 0;
+    getrlimit(RLIMIT_CPU, &this->mainLimitCPU);
+    getrlimit(RLIMIT_AS, &this->mainLimitMEM);
+}
+void Terminal::setLim() {
+    int i = 0;
     
-};
-// void Terminal::lim(int cpu=0, int mem=0) {
-//     int i;
-//     struct rlimit rl;
-//     if (cpu==0 || mem==0)
-//         return;
-//     i = getrlimit(RLIMIT_CPU, &rl);
-//     rl.rlim_cur = cpu;
-//     rl.rlim_max = cpu;
-//     i = setrlimit(RLIMIT_CPU, &rl);
-//     i = getrlimit(RLIMIT_AS, &rl);
-//     rl.rlim_cur = mem;
-//     rl.rlim_max = mem;
-//     i = setrlimit(RLIMIT_AS, &rl);
-// }
+    if (i = setrlimit(RLIMIT_CPU, &this->mainLimitCPU) == -1) {
+        std::cout << "setrlimit for RLIMIT_CPU failed\n";
+    }
+
+    if (i = setrlimit(RLIMIT_AS, &this->mainLimitMEM) == -1) {
+        std::cout << "setrlimit for RLIMIT_AS failed\n";
+    }
+    
+}
+void Terminal::lim(int cpu, int mem) {
+    this->mainLimitCPU.rlim_cur = cpu;
+    //this->mainLimitCPU.rlim_max = cpu;
+    this->mainLimitMEM.rlim_cur = mem * 1000000;
+    //this->mainLimitMEM.rlim_max = mem * 1000000;
+}
+
+void Terminal::limPrint() {
+    std::cout << mainLimitCPU.rlim_cur << " " << mainLimitMEM.rlim_cur << std::endl;
+}
+
 void Terminal::runTerminal(std::string argument) {
     std::string userInput = "";
     bool quit = false;
     std::istream *shellIn;
     std::ifstream fileIn;
+    
+
     if (!argument.empty()) {
         fileIn.open(argument);
         shellIn = &fileIn;
@@ -101,7 +115,7 @@ void Terminal::printStatement(std::vector<std::string>::const_iterator it, std::
         ++(it);
     }
     std::cout << std::endl;
-};
+}
 
 void Terminal::recieveInput(std::string const textInput, int isPipe) {
 
@@ -109,7 +123,7 @@ void Terminal::recieveInput(std::string const textInput, int isPipe) {
 
     inputArgs = this->processStatement(this->removeComments(textInput));
     this->runStatement(inputArgs, isPipe);
-};
+}
 
 void Terminal::setEnvironmentVariable(std::vector<std::string>::const_iterator it, std::vector<std::string>::const_iterator end) {
     std::string key = *it;
@@ -141,9 +155,9 @@ void Terminal::printEnvironementVariables() {
 }
 
 void Terminal::runStatement(std::vector<std::string> * statementVector, int isPipe) {
-    std::vector<std::string>::const_iterator it = statementVector->begin();
-    std::vector<std::string>::const_iterator end = statementVector->end();
-    std::vector<std::string>::const_iterator found;
+    std::vector<std::string>::iterator it = statementVector->begin();
+    std::vector<std::string>::iterator end = statementVector->end();
+    std::vector<std::string>::iterator found;
 
     bool bg = this->isBackground(statementVector);
     int cmd = -1;
@@ -159,12 +173,15 @@ void Terminal::runStatement(std::vector<std::string> * statementVector, int isPi
         if (this->checkExec(pathExec)) {
             cmd = 99;
             cmd += isPipe;
+            *it = pathExec;
         }
     } else if (this->checkExec(*it)) {
-        pathExec = *it;
         cmd = 99; // don't forget this is how you were going to execute with fork exec
         cmd += isPipe;
     }
+    std::cout << "cmd=" << cmd << std::endl;
+    std::cout << "bg=" << bg << std::endl;
+    std::cout << "isPipe=" << isPipe << std::endl;
     switch(cmd) {
         case 0:
             exit(0);
@@ -196,6 +213,11 @@ void Terminal::runStatement(std::vector<std::string> * statementVector, int isPi
             changeCurrentWorkingDirectory(*it);
             break;
         case 8:
+            if (statementVector->size() == 3) {
+                this->lim(std::stoi(statementVector->at(1)), std::stoi(statementVector->at(2)));
+            } else if (statementVector->size() == 1) {
+                this->limPrint();
+            }
             break;
         case 99:
             this->handleProgram(statementVector, bg);
@@ -210,7 +232,7 @@ void Terminal::runStatement(std::vector<std::string> * statementVector, int isPi
     }
     ++it;
 
-};
+}
 void Terminal::removeAmpersand(std::vector<std::string> * statementVector) {
     std::vector<std::string>::iterator it = statementVector->begin();
     std::vector<std::string>::iterator end = statementVector->end();
@@ -246,7 +268,7 @@ std::vector<std::string>* Terminal::processStatement(std::string const statement
     
     this->replaceEnvironmentVariables(statementVector);
     return statementVector;
-};
+}
 
 void Terminal::replaceEnvironmentVariables(std::vector<std::string>* statementVector) {
     std::size_t found;
@@ -373,7 +395,11 @@ bool Terminal::isBackground(std::vector<std::string> * statements) {
     return false;
 }
 void Terminal::handleProgram(std::vector<std::string> * statements, bool background) {
-    
+    if (background) {
+        signal(SIGCHLD, signalChildExitHandler);
+    } else {
+        signal(SIGCHLD, SIG_DFL);
+    }
     int pid = fork();
     if (pid == 0) {
         this->executeProgram(statements, background);
@@ -387,6 +413,7 @@ void Terminal::executeProgram(std::vector<std::string> * arguments, bool backgro
     std::vector<std::string>::iterator it = arguments->begin();
     std::vector<std::string>::iterator end = arguments->end();
     
+    
     std::vector<char *> commandArgs;
 
     while (it < end) {
@@ -395,6 +422,15 @@ void Terminal::executeProgram(std::vector<std::string> * arguments, bool backgro
         }
         ++it;
     }
-    char **args = commandArgs.data();
-    execvp(args[0], &args[0]);
+    // char **args = commandArgs.data();
+    const char **args = new const char* [commandArgs.size()+2];
+    args[0] = commandArgs[0];
+    for (int i = 0; i < commandArgs.size() + 1; ++i) {
+        args[i + 1] = commandArgs[i];
+    }
+    for (int i = 0; i < commandArgs.size()+2; ++i)
+        std::cout << *(args[i]) << " ";
+    args[commandArgs.size() + 1] = NULL;
+    this->setLim();
+    execve(args[0], (char **)args, NULL);
 }
