@@ -14,6 +14,12 @@
 #include <dirent.h>
 #include <cstring>
 #include <fstream>
+#include <algorithm>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include "Process.h"
 
 class Terminal {
     public:
@@ -28,10 +34,14 @@ class Terminal {
         std::vector<std::string> *inputArgs;
         std::vector<std::vector<std::string>> inputStatements;
         std::map<std::string, int> commands;
+        int CPU_LIMIT;
+        int MEM_LIMIT;
 
-        void recieveInput(std::string textInput);
+        // void lim(int cpu=0, int mem=0);
+        // void lim();
+        void recieveInput(std::string textInput, int isPipe);
         std::string removeComments(std::string rawInputText);
-        void runStatement(std::vector<std::string> * const statementVector);
+        void runStatement(std::vector<std::string> * statementVector, int isPipe);
         std::vector<std::string>* processStatement(std::string statement);
         std::string getCurrentWorkingDirectory();
         void changeCurrentWorkingDirectory(std::string pathName);
@@ -43,8 +53,12 @@ class Terminal {
         std::vector<std::string> splitString(std::string text, char delimiter);
         void witchCommand(std::string command);
         std::string findCommand(std::string command);
-        void childProcess(std::string command);
         bool checkExec(std::string path);
+        bool handlePipe(std::string statements);
+        void executeProgram(std::vector<std::string> * arguments, bool isBackground);
+        bool isBackground(std::vector<std::string> * statements);
+        void handleProgram(std::vector<std::string> * statements, bool background);
+        void removeAmpersand(std::vector<std::string> * statementVector);
 };
 
 
