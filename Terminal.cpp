@@ -55,39 +55,73 @@ void Terminal::runTerminal(std::string argument) {
     bool quit = false;
     std::istream *shellIn;
     std::ifstream fileIn;
-    
-
+    // std::cout << argument << std::endl;
+    std::vector<std::string> allInput; // added
     if (!argument.empty()) {
         fileIn.open(argument);
         shellIn = &fileIn;
     } else {
         shellIn = &std::cin;
     }
-
     venv["AOSCWD"] = this->getCurrentWorkingDirectory();
     venv["AOSHOME"] = getenv("HOME");
     std::string prompt;
-
-    while (!quit) {
-        
-        if (isatty(fileno(stdin))==1 && argument.empty()){
-            std::cout << venv["USER"] << "_sh> ";
-        
+    // ============== added
+    bool isattyResponse = isatty(fileno(stdin))==0;
+    if (isattyResponse) {
+        while (std::getline(*shellIn, userInput)) {
+            allInput.push_back(userInput);
         }
-        if(std::getline(*shellIn, userInput)) {
-            if (!userInput.empty()) {
-                if (!this->handlePipe(userInput)) {
-                    this->recieveInput(userInput, 0);
+        for (int i = 0; i < allInput.size(); ++i) {
+            // std::cout << i << std::endl;
+            if (!allInput[i].empty() || allInput[i].find_first_not_of(" \t\n\v\f\r") != std::string::npos) { 
+                if (allInput[i].find('|') == std::string::npos) {
+                    // std::cout << getpid() << " RUNNING " << userInput << "\n";
+                    std::vector<std::string> temp = this->processStatement(allInput[i]);
+                    if (temp[0].find("prt") != std::string::npos) {
+                        std::string tempPrint;
+                        allInput[i].erase(0,4);
+                        std::cout << allInput[i] << std::endl;
+                    } else {
+                        this->receiveInput(allInput[i], 0);
+
+                    }
+                } else {
+                    // std::cout << "pipe\n";
+                    this->handlePipe(allInput[i]);
                 }
             }
-            
-        } else {
-            quit = true;
         }
+    } else {
 
-        userInput = "";
+        while (!quit) {
+            
+            if (isatty(fileno(stdin))==1 && argument.empty()){
+                std::cout << venv["USER"] << "_sh> ";
+            
+            }
+            if(std::getline(*shellIn, userInput)) {
+                // std::cerr << userInput << std::endl;
+                if (!userInput.empty() || userInput.find_first_not_of(" \t\n\v\f\r") != std::string::npos) { 
+                    if (userInput.find('|') == std::string::npos) {
+                        // std::cout << getpid() << " RUNNING " << userInput << "\n";
+                        this->receiveInput(userInput, 0);
+                    } else {
+                        // std::cout << "pipe\n";
+                        this->handlePipe(userInput);
+                    }
+                }
+                
+            } else {
+                quit = true;
+            }
+
+            userInput = "";
+        }
     }
 }
+    // ============== added
+
 
 std::string Terminal::getCurrentWorkingDirectory() {
     char tempBuffer[PATH_MAX];
@@ -105,7 +139,17 @@ void Terminal::changeCurrentWorkingDirectory(std::string pathName) {
     //std::cout << success << " is the value of success\n";
     //std::cout << errno << " is the value of errno\n";
 }
-
+void Terminal::printStatement2(std::vector<std::string> statement) {
+    std::vector<std::string>::iterator it = statement.begin();
+    ++it;
+    bool endStatement = false;
+    while (it != statement.end()) {
+        endStatement = ((it+1) == statement.end());
+        std::cout << *it << (endStatement ? "" : " ");
+        ++it;
+    }
+    std::cout << std::endl;
+}
 void Terminal::printStatement(std::vector<std::string>::const_iterator it, std::vector<std::string>::const_iterator end) {
     bool endStatement = false;
 
@@ -117,9 +161,10 @@ void Terminal::printStatement(std::vector<std::string>::const_iterator it, std::
     std::cout << std::endl;
 }
 
-void Terminal::recieveInput(std::string const textInput, int isPipe) {
-
-    delete inputArgs;
+void Terminal::receiveInput(std::string const textInput, int isPipe) {
+    // std::cout << "receiveInput\n";
+    std::vector<std::string> inputArgs;
+    
 
     inputArgs = this->processStatement(this->removeComments(textInput));
     this->runStatement(inputArgs, isPipe);
@@ -154,34 +199,42 @@ void Terminal::printEnvironementVariables() {
     }
 }
 
-void Terminal::runStatement(std::vector<std::string> * statementVector, int isPipe) {
-    std::vector<std::string>::iterator it = statementVector->begin();
-    std::vector<std::string>::iterator end = statementVector->end();
+void Terminal::runStatement(std::vector<std::string> statementVector, int isPipe) {
+    // std::cout << "HIERE";
+    std::vector<std::string>::iterator it = statementVector.begin();
+    std::vector<std::string>::iterator end = statementVector.end();
     std::vector<std::string>::iterator found;
 
-    bool bg = this->isBackground(statementVector);
+    bool bg = this->isBackground(&statementVector);
     int cmd = -1;
     auto envCmd = commands.find(*it);
     
     std::string pathExec = "";
-    this->removeAmpersand(statementVector);
+    this->removeAmpersand(&statementVector);
     if (envCmd != commands.end()) {
         cmd = envCmd->second;
     } else if (!this->findCommand(*it).empty()) {
         //found in aospath
         pathExec = this->findCommand(*it);
-        if (this->checkExec(pathExec)) {
-            cmd = 99;
-            cmd += isPipe;
-            *it = pathExec;
-        }
+        // std::cout << "executable\n";
+        cmd = 99;
+        cmd += isPipe;
+        *it = pathExec;
+        // if (this->checkExec(pathExec)) {
+        //     // std::cout << "first 99\n";
+        // }
     } else if (this->checkExec(*it)) {
+        // pathExec = this->findCommand(*it);
+        // std::cout << "exe\n";
+        // *it = pathExec;
         cmd = 99; // don't forget this is how you were going to execute with fork exec
         cmd += isPipe;
+        // std::cout << "second 99\n";
     }
-    std::cout << "cmd=" << cmd << std::endl;
-    std::cout << "bg=" << bg << std::endl;
-    std::cout << "isPipe=" << isPipe << std::endl;
+    // std::cout << "cmd=" << cmd << std::endl;
+    // std::cout << "bg=" << bg << std::endl;
+    // std::cout << "isPipe=" << isPipe << std::endl;
+
     switch(cmd) {
         case 0:
             exit(0);
@@ -198,8 +251,8 @@ void Terminal::runStatement(std::vector<std::string> * statementVector, int isPi
             this->printEnvironementVariables();
             break;
         case 4:
-            ++it;
-            this->printStatement(it, end);
+        
+            this->printStatement2(statementVector);
             break;
         case 5:
             ++it;
@@ -213,9 +266,9 @@ void Terminal::runStatement(std::vector<std::string> * statementVector, int isPi
             changeCurrentWorkingDirectory(*it);
             break;
         case 8:
-            if (statementVector->size() == 3) {
-                this->lim(std::stoi(statementVector->at(1)), std::stoi(statementVector->at(2)));
-            } else if (statementVector->size() == 1) {
+            if (statementVector.size() == 3) {
+                this->lim(std::stoi(statementVector.at(1)), std::stoi(statementVector.at(2)));
+            } else if (statementVector.size() == 1) {
                 this->limPrint();
             }
             break;
@@ -227,10 +280,10 @@ void Terminal::runStatement(std::vector<std::string> * statementVector, int isPi
             break;
         default:
             std::cout << "Invalid command - ";
-            this->printStatement(it, end);
+            this->printStatement2(statementVector);
             break;
     }
-    ++it;
+    
 
 }
 void Terminal::removeAmpersand(std::vector<std::string> * statementVector) {
@@ -258,15 +311,15 @@ std::string Terminal::removeComments(std::string const rawInputText) {
     return returnText;
 }
 
-std::vector<std::string>* Terminal::processStatement(std::string const statement) {
+std::vector<std::string> Terminal::processStatement(std::string const statement) {
     std::istringstream ss(statement);
     std::string argStr;
-    std::vector<std::string>* statementVector = new std::vector<std::string>();
+    std::vector<std::string> statementVector = {};
     while (ss >> std::quoted(argStr)) {
-        statementVector->push_back(argStr);
+        statementVector.push_back(argStr);
     }
     
-    this->replaceEnvironmentVariables(statementVector);
+    this->replaceEnvironmentVariables(&statementVector);
     return statementVector;
 }
 
@@ -351,16 +404,18 @@ bool Terminal::handlePipe(std::string statements) {
     if (pipeStatements.size() == 2) {
         pids[0] = fork();
         if (pids[0] == 0) {
+            // std::cout << "in Pipe first child before RI\n";
             close(pipefd[0]);
             dup2(pipefd[1], 1);
-            this->recieveInput(pipeStatements[0], 1);
+            this->receiveInput(pipeStatements[0], 1);
             exit(0);
         } else {
             pids[1] = fork();
             if (pids[1] == 0) {
+                // std::cout << "in Pipe second child before RI\n";
                 close(pipefd[1]);
                 dup2(pipefd[0], 0);
-                this->recieveInput(pipeStatements[1], 1);
+                this->receiveInput(pipeStatements[1], 1);
                 exit(0);
             }
 
@@ -394,43 +449,62 @@ bool Terminal::isBackground(std::vector<std::string> * statements) {
     }
     return false;
 }
-void Terminal::handleProgram(std::vector<std::string> * statements, bool background) {
+void Terminal::handleProgram(std::vector<std::string> statements, bool background) {
     if (background) {
         signal(SIGCHLD, signalChildExitHandler);
     } else {
         signal(SIGCHLD, SIG_DFL);
     }
+    // std::cout << "This is before the fork!\n";
     int pid = fork();
     if (pid == 0) {
+        // std::cout << "This is INSIDE child process\n";
+
         this->executeProgram(statements, background);
         exit(0);
-    }
-    if (!background) {
+    } else if(!background) {
+        // std::cout << "waiting for " << pid << std::endl;
         int status = wait(&pid);
     }
+    
 }
-void Terminal::executeProgram(std::vector<std::string> * arguments, bool background) {
-    std::vector<std::string>::iterator it = arguments->begin();
-    std::vector<std::string>::iterator end = arguments->end();
+// void Terminal::executeProgram(std::vector<std::string> arguments, bool background) {
+//     std::vector<std::string>::iterator it = arguments.begin();
+//     std::vector<std::string>::iterator end = arguments.end();
     
-    
-    std::vector<char *> commandArgs;
+//     // std::cout << "This is executeProgram saying hello!\n";
+//     std::vector<char *> commandArgs;
+//     std::cout << "commandArgs is getting ";
+//     while (it < end) {
+//         if (!it->empty()) {
 
-    while (it < end) {
-        if (!it->empty()) {
-            commandArgs.push_back(const_cast<char*>(it->c_str()));
-        }
-        ++it;
+//             commandArgs.push_back(const_cast<char*>(it->c_str()));
+//             // std::cout << *it << " ";
+//         }
+//         ++it;
+//     }
+//     std::cout << std::endl;
+    
+//     char **args = commandArgs.data();
+//     // std::transform(commandArgs.begin(), commandArgs.end(), std::back_inserter(commandArgs), convertStringVector);
+//     this->setLim();
+//     // execv(commandArgs[0], &commandArgs[0]);
+//     execve(args[0], args, NULL);
+//     exit(0);
+// }
+void Terminal::executeProgram(std::vector<std::string> arguments, bool background) {
+
+    const char *cmd = arguments[0].c_str();
+    const char **args = new const char* [arguments.size() + 1];
+    
+    for (int i = 0; i < arguments.size(); ++i) {
+        // std::cout << arguments[i];
+        args[i] = arguments[i].c_str();
+        // std::cerr << i << " " << args[i] << std::endl;
     }
-    // char **args = commandArgs.data();
-    const char **args = new const char* [commandArgs.size()+2];
-    args[0] = commandArgs[0];
-    for (int i = 0; i < commandArgs.size() + 1; ++i) {
-        args[i + 1] = commandArgs[i];
-    }
-    for (int i = 0; i < commandArgs.size()+2; ++i)
-        std::cout << *(args[i]) << " ";
-    args[commandArgs.size() + 1] = NULL;
+    args[arguments.size() + 1] = NULL;
     this->setLim();
-    execve(args[0], (char **)args, NULL);
+    // std::cout << "right before execv - " << cmd << std::endl;
+    execv(cmd, (char **)args);
+    exit(0);
 }

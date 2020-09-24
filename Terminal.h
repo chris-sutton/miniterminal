@@ -32,7 +32,7 @@ class Terminal {
     private:
         std::string userInput;
         std::map<std::string, std::string> venv;
-        std::vector<std::string> *inputArgs;
+        
         std::vector<std::vector<std::string>> inputStatements;
         std::map<std::string, int> commands;
 
@@ -40,13 +40,15 @@ class Terminal {
         struct rlimit mainLimitCPU;
         struct rlimit mainLimitMEM;
         
-        void recieveInput(std::string textInput, int isPipe);
+        char* convertStatementForExecve(std::vector<std::string> * arguments);
+        void receiveInput(std::string textInput, int isPipe);
         std::string removeComments(std::string rawInputText);
-        void runStatement(std::vector<std::string> * statementVector, int isPipe);
-        std::vector<std::string>* processStatement(std::string statement);
+        void runStatement(std::vector<std::string> statementVector, int isPipe);
+        std::vector<std::string> processStatement(std::string statement);
         std::string getCurrentWorkingDirectory();
         void changeCurrentWorkingDirectory(std::string pathName);
         void printStatement(std::vector<std::string>::const_iterator it, std::vector<std::string>::const_iterator end);
+        void printStatement2(std::vector<std::string> statement);
         void setEnvironmentVariable(std::vector<std::string>::const_iterator it, std::vector<std::string>::const_iterator end);
         void unsetEnvironmentVariable(std::vector<std::string>::const_iterator it);
         void printEnvironementVariables();
@@ -56,14 +58,13 @@ class Terminal {
         std::string findCommand(std::string command);
         bool checkExec(std::string path);
         bool handlePipe(std::string statements);
-        void executeProgram(std::vector<std::string> * arguments, bool isBackground);
+        void executeProgram(std::vector<std::string> arguments, bool isBackground);
         bool isBackground(std::vector<std::string> * statements);
-        void handleProgram(std::vector<std::string> * statements, bool background);
+        void handleProgram(std::vector<std::string> statements, bool background);
         void removeAmpersand(std::vector<std::string> * statementVector);
         void lim(int cpu, int mem);
         void limPrint();
         void setLim();
-
         
 };
 

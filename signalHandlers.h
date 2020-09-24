@@ -8,7 +8,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <iostream>
+#include <cstring>
 
 void signalChildExitHandler(int signum);
-
+char* convertStringVector(const std::string &str);
 #endif
